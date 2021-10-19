@@ -1,11 +1,22 @@
 package com.epam.cdp.m2.hw2.aggregator;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 
 import javafx.util.Pair;
 
@@ -19,29 +30,33 @@ public class Java8Aggregator implements Aggregator {
     @Override
     public List<Pair<String, Long>> getMostFrequentWords(List<String> words, long limit) {
         List<Pair<String, Long>> result = new ArrayList<>();
-        TreeMap<String, Long> temp = new TreeMap<String, Long>();
-        for (String word : words) {
-            temp.put(word, 1L);
-        }
-        temp.entrySet()
-                .stream()
-                .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
-                .limit(5)
-                .forEach(e -> System.out.println(e.getKey() + ": " + e.getValue()));
 
-        List<String> keys = new ArrayList<>(temp.keySet());
-        List<Long> values = new ArrayList<>(temp.values());
-        if (keys.size() < limit)
-            limit = keys.size();
+        Map<String, Integer > wordCounter = words.stream()
+                .collect(Collectors.toMap(String::toLowerCase, w -> 1, Integer::sum));
 
-        for (int i = 0; i < limit; i++) {
-            result.add(new Pair<>(keys.get(i), values.get(i)));
+        for(Map.Entry<String, Integer> value : wordCounter.entrySet()) {
+            result.add(new Pair<>(value.getKey(), Long.valueOf(value.getValue())));
         }
-        return result;
+        return result.stream().limit(limit).collect(Collectors.toList());
     }
 
     @Override
     public List<String> getDuplicates(List<String> words, long limit) {
-        throw new UnsupportedOperationException();
+        TreeSet<String> seen = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        List<String> result = new ArrayList<>(words).stream()
+                .filter(item -> !seen.add(item))
+                .map(i -> i.toUpperCase(Locale.ROOT)).sorted(new Comparator<String>() {
+                    @Override
+                    public int compare(String o1, String o2) {
+                        if (o1.length() == o2.length())
+                            return o1.compareTo(o2);
+                        if (o1.length() > o2.length())
+                            return 1;
+                        if (o1.length() < o2.length())
+                            return -1;
+                        return 0;
+                    }
+                }).collect(Collectors.toList());
+        return new ArrayList<>(result).stream().limit(limit).collect(Collectors.toList());
     }
 }
